@@ -25,9 +25,21 @@ ALLOWED_MODELS = Literal[
     "gpt-5.1",
     "gpt-4.1",
     "gpt-4o",
+    # Anthropic
     "claude-sonnet-4-5-20250929",
     "claude-haiku-4-5-20251001",
+    # DeepSeek
+    "openrouter/deepseek/deepseek-chat",
+    "openrouter/deepseek/deepseek-reasoner",
+    # Qwen (Alibaba)
+    "openrouter/qwen/qwen-2.5-72b-instruct",
+    "openrouter/qwen/qwen-2.5-coder-32b-instruct",
+    # Meta
+    "openrouter/meta-llama/llama-3.3-70b-instruct",
     "openrouter/meta-llama/llama-3.1-8b-instruct",
+    # Google & Mistral
+    "openrouter/google/gemma-2-27b-it",
+    "openrouter/mistralai/mistral-nemo",
 ]
 
 ALLOWED_MODELS_LIST = list(get_args(ALLOWED_MODELS))
