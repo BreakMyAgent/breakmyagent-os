@@ -9,7 +9,7 @@
 
 Test 12 standard exploits, or fire your own zero-day payloads against multiple models simultaneously.
 
-![BreakMyAgent Demo](docs/demo.gif) *(⬅️ Placeholder: Add your 15-second UI recording here)*
+![BreakMyAgent Demo](https://github.com/user-attachments/assets/aaa26214-1005-4cf7-8ac4-a44b5a2def3c)
 
 ---
 
