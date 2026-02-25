@@ -30,7 +30,7 @@ ALLOWED_MODELS = Literal[
     "claude-haiku-4-5-20251001",
     # DeepSeek
     "openrouter/deepseek/deepseek-chat",
-    "openrouter/deepseek/deepseek-reasoner",
+    "openrouter/deepseek/deepseek-v3.2",
     # Qwen (Alibaba)
     "openrouter/qwen/qwen-2.5-72b-instruct",
     "openrouter/qwen/qwen-2.5-coder-32b-instruct",
