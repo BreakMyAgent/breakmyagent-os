@@ -10,3 +10,5 @@ build/
 .mypy_cache/
 .pytest_cache/
 *.db
+
+/.claude/settings.local.json
