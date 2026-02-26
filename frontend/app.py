@@ -164,6 +164,12 @@ def _render_rate_limit_banner(daily_limit: int = 5) -> None:
     )
 
 st.title("BreakMyAgent")
+st.markdown(
+    '<a href="https://github.com/BreakMyAgent/breakmyagent-os" target="_blank">'
+    '<img src="https://img.shields.io/github/stars/BreakMyAgent/breakmyagent-os?style=social" alt="GitHub Repo stars">'
+    "</a>",
+    unsafe_allow_html=True,
+)
 st.subheader("AI Agent Safety Sandbox")
 st.markdown("Stress-test your AI agent's system prompt against prompt injections and jailbreaks.")
 
