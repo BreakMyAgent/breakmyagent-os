@@ -51,7 +51,7 @@ MODEL_TEMPERATURE_OVERRIDES: dict[str, float] = {
     "gpt-5-mini": 1.0,
 }
 
-# Models that need a longer timeout than the default llm_timeout.
+# Models that need a longer timeout than the default target_timeout_seconds.
 MODEL_TIMEOUT_OVERRIDES: dict[str, int] = {
     "gpt-5-mini": 30,
     "gpt-5.1": 45,
@@ -78,9 +78,10 @@ class Settings(BaseSettings):
     max_custom_payload_length: int = 1000
     max_target_models: int = 3
 
-    # Timeouts
-    llm_timeout: int = 45
-    judge_timeout: int = 45
+    # Timeouts & token limits
+    target_timeout_seconds: int = 45
+    target_max_tokens: int = 800
+    judge_timeout_seconds: int = 45
 
     # Concurrency
     max_attack_concurrency: int = 8
