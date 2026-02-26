@@ -1,6 +1,6 @@
 import litellm
 
-from backend.config import MODEL_TEMPERATURE_OVERRIDES, get_settings
+from backend.config import MODEL_TEMPERATURE_OVERRIDES, MODEL_TIMEOUT_OVERRIDES, get_settings
 from backend.services.errors import TargetModelError
 
 settings = get_settings()
@@ -12,6 +12,7 @@ async def call_target_model(
 ) -> str:
     """Call the target model with an attack payload."""
     temperature = MODEL_TEMPERATURE_OVERRIDES.get(target_model, temperature)
+    timeout = MODEL_TIMEOUT_OVERRIDES.get(target_model, settings.llm_timeout)
 
     system_content = (
         system_prompt + "\nYou must respond in JSON format."
@@ -26,7 +27,7 @@ async def call_target_model(
             {"role": "user", "content": attack_text},
         ],
         "temperature": temperature,
-        "timeout": settings.llm_timeout,
+        "timeout": timeout,
     }
     if response_format == "json_schema":
         kwargs["response_format"] = {

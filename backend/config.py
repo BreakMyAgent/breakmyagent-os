@@ -49,6 +49,14 @@ MODEL_TEMPERATURE_OVERRIDES: dict[str, float] = {
     "gpt-5-mini": 1.0,
 }
 
+# Models that need a longer timeout than the default llm_timeout.
+MODEL_TIMEOUT_OVERRIDES: dict[str, int] = {
+    "gpt-5-mini": 30,
+    "gpt-5.1": 45,
+    "gpt-4.1": 45,
+    "gpt-4o": 45,
+}
+
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""

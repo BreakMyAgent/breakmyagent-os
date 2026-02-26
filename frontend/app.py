@@ -198,21 +198,23 @@ if _shared_run_id:
 
 
 @st.cache_data(ttl=60)
-def fetch_target_models() -> list[str]:
+def fetch_target_models() -> tuple[list[str], dict[str, float]]:
     resp = requests.get(f"{BACKEND_URL}/api/v1/models", timeout=10)
     resp.raise_for_status()
     payload = resp.json()
     models = payload.get("models")
     if not isinstance(models, list) or not all(isinstance(model, str) for model in models):
         raise ValueError("Backend returned an invalid models payload.")
-    return models
+    temp_overrides = payload.get("temperature_overrides", {})
+    return models, temp_overrides
 
 
 try:
-    TARGET_MODELS = fetch_target_models()
+    TARGET_MODELS, TEMPERATURE_OVERRIDES = fetch_target_models()
 except (requests.RequestException, ValueError) as exc:
     st.warning(f"Unable to load models from backend: {str(exc)}")
     TARGET_MODELS = []
+    TEMPERATURE_OVERRIDES = {}
 
 if "running" not in st.session_state:
     st.session_state.running = False
@@ -239,7 +241,16 @@ with st.sidebar:
         model_options,
         disabled=st.session_state.running or not TARGET_MODELS,
     )
-    temperature = st.slider("Temperature", min_value=0.0, max_value=2.0, value=0.7, step=0.1, disabled=st.session_state.running)
+    _temp_override = TEMPERATURE_OVERRIDES.get(target_model)
+    temperature = st.slider(
+        "Temperature",
+        min_value=0.0,
+        max_value=2.0,
+        value=_temp_override if _temp_override is not None else 0.7,
+        step=0.1,
+        disabled=st.session_state.running or _temp_override is not None,
+        help=f"Fixed at {_temp_override} for {target_model}." if _temp_override is not None else None,
+    )
     response_format = st.selectbox("Response Format", ["text", "json_schema"], disabled=st.session_state.running)
     st.divider()
     st.caption("The judge model (gpt-4.1-mini) is fixed and cannot be changed.")

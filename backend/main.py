@@ -9,7 +9,7 @@ from slowapi.errors import RateLimitExceeded
 
 from backend.api.router import router
 from backend.api.schemas import WaitlistRequest, WaitlistResponse
-from backend.config import get_settings
+from backend.config import MODEL_TEMPERATURE_OVERRIDES, get_settings
 from backend.dependencies import limiter
 from backend.services.errors import TelemetryError
 from backend.services.telemetry import add_waitlist_lead
@@ -55,7 +55,10 @@ async def health() -> dict:
 @app.get("/api/v1/models")
 async def list_models() -> dict:
     """Return only models whose provider API key is configured."""
-    return {"models": settings.available_models}
+    return {
+        "models": settings.available_models,
+        "temperature_overrides": MODEL_TEMPERATURE_OVERRIDES,
+    }
 
 
 @app.post("/api/waitlist", response_model=WaitlistResponse)
