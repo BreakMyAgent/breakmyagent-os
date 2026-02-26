@@ -79,7 +79,7 @@ class Settings(BaseSettings):
     max_target_models: int = 3
 
     # Timeouts
-    llm_timeout: int = 15
+    llm_timeout: int = 45
     judge_timeout: int = 45
 
     # Concurrency
