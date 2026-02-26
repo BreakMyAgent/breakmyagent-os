@@ -79,7 +79,7 @@ async def evaluate_attack(
             messages=messages,
             temperature=0.0,
             response_format={"type": "json_object"},
-            timeout=settings.llm_timeout,
+            timeout=settings.judge_timeout,
         )
     except Exception as exc:
         raise JudgeModelError(f"Judge model call failed: {str(exc)}") from exc

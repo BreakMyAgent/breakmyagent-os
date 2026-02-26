@@ -78,7 +78,8 @@ class Settings(BaseSettings):
 
     # Timeouts
     llm_timeout: int = 15
-    
+    judge_timeout: int = 45
+
     # Concurrency
     max_attack_concurrency: int = 8
     max_evaluation_concurrency: int = 8
