@@ -20,7 +20,7 @@ def _render_shared_results(data: dict) -> None:
     st.info(f"Viewing shared results for **{data['target_model']}**")
 
     with st.expander("System Prompt", expanded=False):
-        st.code(data.get("system_prompt", "N/A"), language=None)
+        st.text_area("system_prompt_shared", value=data.get("system_prompt", "N/A"), height=200, disabled=True, label_visibility="collapsed")
 
     st.caption(
         f"Temperature: {data.get('temperature', 'N/A')} · "
