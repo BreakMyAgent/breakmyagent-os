@@ -3,6 +3,8 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal, get_args
 
+os.environ.setdefault("LITELLM_LOG", "DEBUG")
+
 from pydantic_settings import BaseSettings
 
 

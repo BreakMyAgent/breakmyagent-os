@@ -3,7 +3,6 @@ import litellm
 from backend.config import MODEL_TEMPERATURE_OVERRIDES, MODEL_TIMEOUT_OVERRIDES, get_settings
 from backend.services.errors import TargetModelError
 
-litellm.set_verbose = True
 settings = get_settings()
 
 
