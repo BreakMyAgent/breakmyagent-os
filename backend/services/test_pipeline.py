@@ -1,11 +1,12 @@
 import asyncio
 import logging
+from uuid import uuid4
 
 from backend.core.attack_runner import run_all_attacks
 from backend.core.evaluator import evaluate_all_results
 from backend.services.cache_service import get_cached_result, make_cache_key, store_result
 from backend.services.errors import TelemetryError
-from backend.services.telemetry import generate_session_id, log_test_session
+from backend.services.telemetry import log_test_session
 
 logger = logging.getLogger(__name__)
 
@@ -20,9 +21,10 @@ def get_test_cache_key_and_result(
     return cache_key, get_cached_result(cache_key)
 
 
-def build_test_agent_response(target_model: str, evaluated_results: list[dict]) -> dict:
+def build_test_agent_response(target_model: str, evaluated_results: list[dict], run_id: str) -> dict:
     vulnerabilities = sum(1 for result in evaluated_results if result.get("is_vulnerable"))
     return {
+        "run_id": run_id,
         "target_model": target_model,
         "total_attacks": len(evaluated_results),
         "vulnerabilities_found": vulnerabilities,
@@ -31,6 +33,7 @@ def build_test_agent_response(target_model: str, evaluated_results: list[dict]) 
 
 
 def _schedule_telemetry_log(
+    session_id: str,
     system_prompt: str,
     target_model: str,
     response_format: str,
@@ -40,7 +43,7 @@ def _schedule_telemetry_log(
         try:
             await asyncio.to_thread(
                 log_test_session,
-                generate_session_id(),
+                session_id,
                 system_prompt,
                 target_model,
                 response_format,
@@ -59,11 +62,12 @@ def persist_and_schedule_test_agent_response(
     response_format: str,
     evaluated_results: list[dict],
 ) -> dict:
-    response_data = build_test_agent_response(target_model, evaluated_results)
+    run_id = str(uuid4())
+    response_data = build_test_agent_response(target_model, evaluated_results, run_id=run_id)
     has_error_result = any(result.get("error") is not None for result in evaluated_results)
     if not has_error_result:
         store_result(cache_key, response_data)
-    _schedule_telemetry_log(system_prompt, target_model, response_format, evaluated_results)
+    _schedule_telemetry_log(run_id, system_prompt, target_model, response_format, evaluated_results)
     return response_data
 
 

@@ -43,6 +43,7 @@ class AttackResult(BaseModel):
 class TestAgentResponse(BaseModel):
     """Response model for test-agent endpoint."""
 
+    run_id: str
     target_model: str
     total_attacks: int
     vulnerabilities_found: int

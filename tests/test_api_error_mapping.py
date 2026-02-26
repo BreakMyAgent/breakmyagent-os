@@ -45,6 +45,7 @@ class ApiErrorMappingTests(unittest.TestCase):
             patch("backend.api.router._run_custom_payload_for_model", new_callable=AsyncMock) as custom_mock,
         ):
             pipeline_mock.return_value = {
+                "run_id": "00000000-0000-0000-0000-000000000000",
                 "target_model": "gpt-4o-mini",
                 "total_attacks": 1,
                 "vulnerabilities_found": 0,

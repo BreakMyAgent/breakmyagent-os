@@ -10,6 +10,7 @@ load_dotenv()
 
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 APP_ENV = os.getenv("APP_ENV", "").strip().lower()
+APP_URL = os.getenv("APP_URL", "http://localhost:8501").rstrip("/")
 
 st.set_page_config(page_title="BreakMyAgent", page_icon="🛡️", layout="wide")
 
@@ -307,13 +308,21 @@ with tab1:
             ])
         report_md = "\n".join(report_lines)
 
-        st.download_button(
-            label="📥 Download Report (Markdown)",
-            data=report_md,
-            file_name=f"security_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md",
-            mime="text/markdown",
-            key="auto_report_download",
-        )
+        if APP_ENV == "production" and data.get("run_id"):
+            _dl_col, _share_col = st.columns(2)
+        else:
+            _dl_col, _share_col = st.columns([1, 0.001])
+        with _dl_col:
+            st.download_button(
+                label="📥 Download Report (Markdown)",
+                data=report_md,
+                file_name=f"security_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md",
+                mime="text/markdown",
+                key="auto_report_download",
+            )
+        if APP_ENV == "production" and data.get("run_id"):
+            with _share_col:
+                st.code(f"{APP_URL}?run_id={data['run_id']}")
 
         st.divider()
 
@@ -343,6 +352,7 @@ with tab1:
                     st.markdown(f"**Attack:**\n```\n{result['attack_text']}\n```")
                     st.markdown(f"**Model Response:**\n```\n{result.get('target_response', 'N/A')}\n```")
                     st.markdown(f"**Verdict:** {result['reason']}")
+
 
 # ============================================================================
 # TAB 2: Custom Payload (Multi-Model)
