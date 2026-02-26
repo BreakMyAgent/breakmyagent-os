@@ -7,6 +7,7 @@ from fastapi.responses import StreamingResponse
 from backend.api.schemas import (
     CustomPayloadRequest,
     CustomPayloadResponse,
+    SharedResultResponse,
     TestAgentRequest,
     TestAgentResponse,
 )
@@ -14,6 +15,7 @@ from backend.core.attack_runner import run_all_attacks_with_progress
 from backend.core.evaluator import evaluate_attack, evaluate_single_result
 from backend.dependencies import ATTACK_RATE_LIMIT_SCOPE, RATE_LIMIT, limiter
 from backend.services.errors import JudgeModelError, TargetModelError
+from backend.services.cache_service import get_result_by_run_id
 from backend.services.llm_client import call_target_model
 from backend.services.test_pipeline import (
     get_test_cache_key_and_result,
@@ -38,6 +40,21 @@ async def test_agent(request: Request, body: TestAgentRequest) -> dict:
         raise HTTPException(status_code=502, detail=f"Target model call failed: {str(exc)}") from exc
     except JudgeModelError as exc:
         raise HTTPException(status_code=502, detail=f"Judge evaluation failed: {str(exc)}") from exc
+
+
+@router.get("/results/{run_id}", response_model=SharedResultResponse)
+async def get_shared_result(run_id: str) -> dict:
+    """Retrieve cached test results by run_id for shared viewing."""
+    try:
+        from uuid import UUID
+        UUID(run_id, version=4)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid run_id format. Expected UUID4.")
+
+    result = get_result_by_run_id(run_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Results not found for this run_id.")
+    return result
 
 
 @router.post("/test-agent/stream")
@@ -75,6 +92,7 @@ async def test_agent_stream(request: Request, body: TestAgentRequest) -> Streami
                 cache_key=cache_key,
                 system_prompt=body.system_prompt,
                 target_model=body.target_model,
+                temperature=body.temperature,
                 response_format=body.response_format,
                 evaluated_results=evaluated,
             )

@@ -50,6 +50,19 @@ class TestAgentResponse(BaseModel):
     results: list[AttackResult]
 
 
+class SharedResultResponse(BaseModel):
+    """Response model for shared results lookup by run_id."""
+
+    run_id: str
+    system_prompt: str = ""
+    target_model: str
+    temperature: float = 0.7
+    response_format: str = "text"
+    total_attacks: int
+    vulnerabilities_found: int
+    results: list[AttackResult]
+
+
 class CustomPayloadResult(BaseModel):
     """Result of a custom payload test against a single model."""
 

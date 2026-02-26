@@ -59,6 +59,7 @@ def persist_and_schedule_test_agent_response(
     cache_key: str,
     system_prompt: str,
     target_model: str,
+    temperature: float,
     response_format: str,
     evaluated_results: list[dict],
 ) -> dict:
@@ -66,7 +67,13 @@ def persist_and_schedule_test_agent_response(
     response_data = build_test_agent_response(target_model, evaluated_results, run_id=run_id)
     has_error_result = any(result.get("error") is not None for result in evaluated_results)
     if not has_error_result:
-        store_result(cache_key, response_data)
+        cache_data = {
+            **response_data,
+            "system_prompt": system_prompt,
+            "temperature": temperature,
+            "response_format": response_format,
+        }
+        store_result(cache_key, cache_data)
     _schedule_telemetry_log(run_id, system_prompt, target_model, response_format, evaluated_results)
     return response_data
 
@@ -93,6 +100,7 @@ async def run_test_agent_pipeline(
         cache_key=cache_key,
         system_prompt=system_prompt,
         target_model=target_model,
+        temperature=temperature,
         response_format=response_format,
         evaluated_results=evaluated_results,
     )

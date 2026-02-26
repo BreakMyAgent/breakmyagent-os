@@ -2,6 +2,7 @@
 
 from backend.services.cache_service import (
     get_cached_result,
+    get_result_by_run_id,
     make_cache_key,
     store_result,
 )
@@ -21,6 +22,7 @@ from backend.services.telemetry import (
 __all__ = [
     "call_target_model",
     "get_cached_result",
+    "get_result_by_run_id",
     "make_cache_key",
     "store_result",
     "UpstreamServiceError",

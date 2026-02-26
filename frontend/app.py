@@ -15,6 +15,114 @@ APP_URL = os.getenv("APP_URL", "http://localhost:8501").rstrip("/")
 st.set_page_config(page_title="BreakMyAgent", page_icon="🛡️", layout="wide")
 
 
+def _render_shared_results(data: dict) -> None:
+    """Render test results in read-only shared mode."""
+    st.info(f"Viewing shared results for **{data['target_model']}**")
+
+    with st.expander("System Prompt", expanded=False):
+        st.code(data.get("system_prompt", "N/A"), language=None)
+
+    st.caption(
+        f"Temperature: {data.get('temperature', 'N/A')} · "
+        f"Response Format: {data.get('response_format', 'N/A')}"
+    )
+
+    error_tests = [r for r in data["results"] if r.get("error")]
+    failed_tests = [r for r in data["results"] if r["is_vulnerable"]]
+    passed_tests = [r for r in data["results"] if not r["is_vulnerable"] and not r.get("error")]
+
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("📊 Total Tests", data["total_attacks"])
+    col2.metric("🛡️ Passed", len(passed_tests))
+    col3.metric("🚨 Vulnerabilities Found", data["vulnerabilities_found"])
+    col4.metric("⚠️ Errors", len(error_tests))
+
+    tests_evaluated = len(passed_tests) + len(failed_tests)
+    score = round((1 - len(failed_tests) / max(tests_evaluated, 1)) * 100)
+
+    report_lines = [
+        "# BreakMyAgent Security Report (Shared)",
+        f"**Target Model:** {data['target_model']}",
+        "",
+        "## Summary",
+        f"- **Total Tests:** {data['total_attacks']}",
+        f"- **Passed:** {len(passed_tests)}",
+        f"- **Vulnerabilities Found:** {data['vulnerabilities_found']}",
+        f"- **Errors:** {len(error_tests)}",
+        f"- **Safety Score:** {score}%",
+        "",
+        "## Detailed Results",
+        "",
+    ]
+    for section_label, section_tests in [
+        ("🚨 Vulnerabilities", failed_tests),
+        ("⚠️ Errors", error_tests),
+        ("🛡️ Passed Tests", passed_tests),
+    ]:
+        report_lines.append(f"### {section_label}")
+        report_lines.append("")
+        for result in section_tests:
+            report_lines.extend([
+                f"#### {result['attack_name']} ({result['category']})",
+                "",
+                "**Attack:**",
+                "```",
+                result["attack_text"],
+                "```",
+                "",
+            ])
+            if result.get("error"):
+                report_lines.append(f"**Error:** {result['error']}")
+            else:
+                report_lines.extend([
+                    "**Model Response:**",
+                    "```",
+                    result.get("target_response", "N/A") or "N/A",
+                    "```",
+                    "",
+                    f"**Verdict:** {result['reason']}",
+                ])
+            report_lines.extend(["", "---", ""])
+    report_md = "\n".join(report_lines)
+
+    st.download_button(
+        label="📥 Download Report (Markdown)",
+        data=report_md,
+        file_name=f"shared_security_report_{data.get('run_id', 'unknown')}.md",
+        mime="text/markdown",
+        key="shared_report_download",
+    )
+
+    st.divider()
+
+    if failed_tests:
+        st.subheader("🚨 Vulnerabilities Found")
+        for result in failed_tests:
+            with st.expander(f"🔴 {result['attack_name']} ({result['category']})", expanded=False):
+                st.error("**VULNERABLE** - This attack succeeded!")
+                st.markdown(f"**Attack:**\n```\n{result['attack_text']}\n```")
+                st.markdown(f"**Model Response:**\n```\n{result.get('target_response', 'N/A')}\n```")
+                st.markdown(f"**Verdict:** {result['reason']}")
+
+    if error_tests:
+        st.subheader("⚠️ Errors")
+        for result in error_tests:
+            with st.expander(f"⚠️ {result['attack_name']} ({result['category']})", expanded=False):
+                st.warning("**Something went wrong** - The model returned an error.")
+                st.markdown(f"**Attack:**\n```\n{result['attack_text']}\n```")
+                st.markdown(f"**Debug Error:**\n```\n{result.get('error', 'Unknown error')}\n```")
+                st.markdown(f"**Verdict:** {result['reason']}")
+
+    if passed_tests:
+        st.subheader("🛡️ Passed Tests")
+        for result in passed_tests:
+            with st.expander(f"🟢 {result['attack_name']} ({result['category']})", expanded=False):
+                st.success("**SAFE** - This attack was blocked!")
+                st.markdown(f"**Attack:**\n```\n{result['attack_text']}\n```")
+                st.markdown(f"**Model Response:**\n```\n{result.get('target_response', 'N/A')}\n```")
+                st.markdown(f"**Verdict:** {result['reason']}")
+
+
 def _render_rate_limit_banner(daily_limit: int = 5) -> None:
     """Display a visually distinct PLG banner when the daily rate limit is reached."""
     st.markdown(
@@ -58,6 +166,29 @@ def _render_rate_limit_banner(daily_limit: int = 5) -> None:
 st.title("BreakMyAgent")
 st.subheader("AI Agent Safety Sandbox")
 st.markdown("Stress-test your AI agent's system prompt against prompt injections and jailbreaks.")
+
+# ============================================================================
+# Shared Results Mode: detect ?run_id= in URL
+# ============================================================================
+_shared_run_id = st.query_params.get("run_id")
+if _shared_run_id:
+    try:
+        _shared_resp = requests.get(
+            f"{BACKEND_URL}/api/v1/results/{_shared_run_id}", timeout=15
+        )
+        if _shared_resp.status_code == 200:
+            _render_shared_results(_shared_resp.json())
+        elif _shared_resp.status_code == 404:
+            st.error("Results not found. This link may have expired or is invalid.")
+        else:
+            st.error("Failed to load shared results. Please try again later.")
+    except requests.RequestException:
+        st.error("Cannot connect to backend to load shared results.")
+
+    if st.button("Run your own test", type="primary"):
+        st.query_params.clear()
+        st.rerun()
+    st.stop()
 
 
 @st.cache_data(ttl=60)

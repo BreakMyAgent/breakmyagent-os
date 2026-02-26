@@ -22,6 +22,14 @@ def _init_db(conn: sqlite3.Connection) -> None:
         )
         """
     )
+    try:
+        conn.execute("ALTER TABLE cache ADD COLUMN run_id TEXT")
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+    # Backfill run_id from JSON value for rows cached before this column existed
+    conn.execute(
+        "UPDATE cache SET run_id = json_extract(value, '$.run_id') WHERE run_id IS NULL"
+    )
     conn.commit()
 
 
@@ -53,9 +61,21 @@ def get_cached_result(cache_key: str) -> dict | None:
 
 def store_result(cache_key: str, result: dict) -> None:
     """Store a result in the cache."""
+    run_id = result.get("run_id")
     with _get_connection() as conn:
         conn.execute(
-            "INSERT OR REPLACE INTO cache (key, value) VALUES (?, ?)",
-            (cache_key, json.dumps(result)),
+            "INSERT OR REPLACE INTO cache (key, value, run_id) VALUES (?, ?, ?)",
+            (cache_key, json.dumps(result), run_id),
         )
         conn.commit()
+
+
+def get_result_by_run_id(run_id: str) -> dict | None:
+    """Retrieve a cached result by run_id."""
+    with _get_connection() as conn:
+        row = conn.execute(
+            "SELECT value FROM cache WHERE run_id = ?", (run_id,)
+        ).fetchone()
+        if row:
+            return json.loads(row[0])
+        return None

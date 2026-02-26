@@ -25,13 +25,18 @@ class TestPipelineCachingTests(unittest.TestCase):
             cache_key="k1",
             system_prompt="prompt",
             target_model="gpt-4o-mini",
+            temperature=0.7,
             response_format="text",
             evaluated_results=evaluated_results,
         )
 
         self.assertEqual(response["total_attacks"], 1)
         self.assertEqual(response["vulnerabilities_found"], 0)
-        store_result_mock.assert_called_once_with("k1", response)
+        store_result_mock.assert_called_once()
+        stored_data = store_result_mock.call_args[0][1]
+        self.assertEqual(stored_data["system_prompt"], "prompt")
+        self.assertEqual(stored_data["temperature"], 0.7)
+        self.assertEqual(stored_data["response_format"], "text")
         telemetry_mock.assert_called_once()
 
     @patch("backend.services.test_pipeline._schedule_telemetry_log")
@@ -54,6 +59,7 @@ class TestPipelineCachingTests(unittest.TestCase):
             cache_key="k2",
             system_prompt="prompt",
             target_model="gpt-4o-mini",
+            temperature=0.7,
             response_format="text",
             evaluated_results=evaluated_results,
         )
