@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import time
 from uuid import uuid4
 
 from backend.core.attack_runner import run_all_attacks
@@ -91,10 +92,24 @@ async def run_test_agent_pipeline(
         response_format=response_format,
     )
     if cached is not None:
+        logger.info(f"Cache hit [model={target_model}]")
         return cached
 
+    logger.info(f"Cache miss, running pipeline [model={target_model}]")
+    pipeline_t0 = time.perf_counter()
+
+    attack_t0 = time.perf_counter()
     attack_results = await run_all_attacks(target_model, system_prompt, temperature, response_format)
+    attack_elapsed = time.perf_counter() - attack_t0
+    logger.info(f"Attack phase completed in {attack_elapsed:.2f}s [model={target_model}]")
+
+    eval_t0 = time.perf_counter()
     evaluated_results = await evaluate_all_results(attack_results)
+    eval_elapsed = time.perf_counter() - eval_t0
+    logger.info(f"Evaluation phase completed in {eval_elapsed:.2f}s [model={target_model}]")
+
+    pipeline_elapsed = time.perf_counter() - pipeline_t0
+    logger.info(f"Pipeline completed in {pipeline_elapsed:.2f}s [model={target_model}]")
 
     return persist_and_schedule_test_agent_response(
         cache_key=cache_key,

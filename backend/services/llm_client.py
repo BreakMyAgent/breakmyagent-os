@@ -1,7 +1,12 @@
+import logging
+import time
+
 import litellm
 
 from backend.config import MODEL_TEMPERATURE_OVERRIDES, MODEL_TIMEOUT_OVERRIDES, get_settings
 from backend.services.errors import TargetModelError
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -12,7 +17,7 @@ async def call_target_model(
 ) -> str:
     """Call the target model with an attack payload."""
     temperature = MODEL_TEMPERATURE_OVERRIDES.get(target_model, temperature)
-    timeout = MODEL_TIMEOUT_OVERRIDES.get(target_model, settings.llm_timeout)
+    timeout = MODEL_TIMEOUT_OVERRIDES.get(target_model, settings.target_timeout_seconds)
 
     system_content = (
         system_prompt + "\nYou must respond in JSON format."
@@ -28,6 +33,8 @@ async def call_target_model(
         ],
         "temperature": temperature,
         "timeout": timeout,
+        "max_tokens": settings.target_max_tokens,
+        "num_retries": 0,
     }
     if response_format == "json_schema":
         kwargs["response_format"] = {
@@ -49,10 +56,16 @@ async def call_target_model(
             },
         }
 
+    t0 = time.perf_counter()
     try:
         response = await litellm.acompletion(**kwargs)
     except Exception as exc:
+        elapsed = time.perf_counter() - t0
+        logger.error(f"Target model failed after {elapsed:.2f}s [model={target_model}, timeout={timeout}]")
         raise TargetModelError(f"Target model call failed: {str(exc)}") from exc
+
+    elapsed = time.perf_counter() - t0
+    logger.info(f"Target model responded in {elapsed:.2f}s [model={target_model}, timeout={timeout}]")
 
     content = response.choices[0].message.content
     if content is None:

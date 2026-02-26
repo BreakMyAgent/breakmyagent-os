@@ -1,11 +1,15 @@
 import asyncio
 import json
+import logging
+import time
 from collections.abc import AsyncGenerator
 from typing import Any
 
 from backend.config import data_path, get_settings
 from backend.services.llm_client import call_target_model
 from backend.services.errors import TargetModelError
+
+logger = logging.getLogger(__name__)
 
 ATTACKS_PATH = data_path("attacks.json")
 settings = get_settings()
@@ -19,6 +23,7 @@ def load_attacks() -> list[dict]:
 async def run_single_attack(
     target_model: str, system_prompt: str, attack: dict, temperature: float, response_format: str
 ) -> dict:
+    t0 = time.perf_counter()
     try:
         response = await call_target_model(
             target_model=target_model,
@@ -27,6 +32,8 @@ async def run_single_attack(
             temperature=temperature,
             response_format=response_format,
         )
+        elapsed = time.perf_counter() - t0
+        logger.info(f"Attack executed in {elapsed:.2f}s [model={target_model}, attack={attack['name']}]")
         return {
             "attack_id": attack["id"],
             "attack_name": attack["name"],
@@ -37,6 +44,8 @@ async def run_single_attack(
             "error": None,
         }
     except TargetModelError as e:
+        elapsed = time.perf_counter() - t0
+        logger.warning(f"Attack failed in {elapsed:.2f}s [model={target_model}, attack={attack['name']}]: {e}")
         return {
             "attack_id": attack["id"],
             "attack_name": attack["name"],
@@ -76,7 +85,11 @@ async def run_all_attacks(
         )
         for attack in attacks
     ]
-    return await asyncio.gather(*tasks)
+    t0 = time.perf_counter()
+    results = await asyncio.gather(*tasks)
+    elapsed = time.perf_counter() - t0
+    logger.info(f"All attacks completed in {elapsed:.2f}s [count={len(results)}, model={target_model}]")
+    return results
 
 
 async def run_all_attacks_with_progress(
@@ -103,6 +116,7 @@ async def run_all_attacks_with_progress(
         for attack in attacks
     ]
 
+    t0 = time.perf_counter()
     for coro in asyncio.as_completed(tasks):
         result = await coro
         results.append(result)
@@ -113,6 +127,9 @@ async def run_all_attacks_with_progress(
             "total": total,
             "current_attack": result["attack_name"],
         }
+
+    elapsed = time.perf_counter() - t0
+    logger.info(f"All attacks (streaming) completed in {elapsed:.2f}s [count={len(results)}, model={target_model}]")
 
     yield {
         "type": "complete",
