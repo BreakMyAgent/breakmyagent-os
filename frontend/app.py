@@ -261,7 +261,7 @@ with prompt_col1:
 with prompt_col2:
     def _load_example() -> None:
         st.session_state.system_prompt_input = VULNERABLE_EXAMPLE_PROMPT
-    st.button("🪄 Load Vulnerable Example", disabled=st.session_state.running, on_click=_load_example)
+    st.button("🪄 Try Vulnerable Prompt", disabled=st.session_state.running, on_click=_load_example)
 st.text_area(
     "Enter your agent's system prompt",
     height=200,
